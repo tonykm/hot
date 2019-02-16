@@ -16,6 +16,8 @@ set(hot-commons-lib-HEADERS ${hot-commons-lib-HEADERS} ${HDR_NAMESPACE}/PartialK
 set(hot-commons-lib-HEADERS ${hot-commons-lib-HEADERS} ${HDR_NAMESPACE}/InsertInformation.hpp)
 set(hot-commons-lib-HEADERS ${hot-commons-lib-HEADERS} ${HDR_NAMESPACE}/MultiMaskPartialKeyMapping.hpp)
 set(hot-commons-lib-HEADERS ${hot-commons-lib-HEADERS} ${HDR_NAMESPACE}/MultiMaskPartialKeyMappingInterface.hpp)
+set(hot-commons-lib-HEADERS ${hot-commons-lib-HEADERS} ${HDR_NAMESPACE}/ExtendedMultiMaskPartialKeyMapping.hpp)
+set(hot-commons-lib-HEADERS ${hot-commons-lib-HEADERS} ${HDR_NAMESPACE}/ExtendedMultiMaskPartialKeyMappingInterface.hpp)
 set(hot-commons-lib-HEADERS ${hot-commons-lib-HEADERS} ${HDR_NAMESPACE}/NodeAllocationInformation.hpp)
 set(hot-commons-lib-HEADERS ${hot-commons-lib-HEADERS} ${HDR_NAMESPACE}/NodeAllocationInformations.hpp)
 set(hot-commons-lib-HEADERS ${hot-commons-lib-HEADERS} ${HDR_NAMESPACE}/NodeMergeInformation.hpp)

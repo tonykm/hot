@@ -20,7 +20,7 @@ struct DiscriminativeBit {
 
 public:
 	inline DiscriminativeBit(uint16_t const significantByteIndex, uint8_t const existingByte, uint8_t const newKeyByte);
-	inline DiscriminativeBit(uint16_t const absoluteSignificantBitIndex, uint const newBitValue=1);
+	inline DiscriminativeBit(uint const absoluteSignificantBitIndex, uint const newBitValue=1);
 
 	inline uint8_t getExtractionByte() const;
 
@@ -37,7 +37,7 @@ inline DiscriminativeBit::DiscriminativeBit(uint16_t const significantByteIndex,
 {
 }
 
-inline DiscriminativeBit::DiscriminativeBit(uint16_t const absoluteSignificantBitIndex, uint const newBitValue)
+inline DiscriminativeBit::DiscriminativeBit(uint const absoluteSignificantBitIndex, uint const newBitValue)
 	: mByteIndex(getByteIndex(absoluteSignificantBitIndex))
 	, mByteRelativeBitIndex(bitPositionInByte(absoluteSignificantBitIndex))
 	, mAbsoluteBitIndex(absoluteSignificantBitIndex)

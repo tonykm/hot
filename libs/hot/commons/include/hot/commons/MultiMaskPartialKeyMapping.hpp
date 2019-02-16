@@ -26,6 +26,11 @@ MultiMaskPartialKeyMapping<numberExtractionMasks>::getExtractionDataRegister() c
 	return SIMDHelperType::toRegister(mExtractionData);
 }
 
+template<unsigned int numberExtractionMasks> inline typename MultiMaskPartialKeyMapping<numberExtractionMasks>::SIMDRegisterType
+MultiMaskPartialKeyMapping<numberExtractionMasks>::getExtendedPositionsRegister() const {
+	return SIMDHelperType::toRegister(mExtractionExtendedPositions);
+}
+
 template<unsigned int numberExtractionMasks> inline void
 MultiMaskPartialKeyMapping<numberExtractionMasks>::setPositions(typename MultiMaskPartialKeyMapping<numberExtractionMasks>::SIMDRegisterType positions) {
 	return SIMDHelperType::store(positions, mExtractionPositions);
@@ -36,11 +41,17 @@ MultiMaskPartialKeyMapping<numberExtractionMasks>::setExtractionData(typename Mu
 	return SIMDHelperType::store(extractionData, mExtractionData);
 }
 
+template<unsigned int numberExtractionMasks> inline void
+MultiMaskPartialKeyMapping<numberExtractionMasks>::setExtendedPositions(typename MultiMaskPartialKeyMapping<numberExtractionMasks>::SIMDRegisterType positions) {
+	return SIMDHelperType::store(positions, mExtractionExtendedPositions);
+}
+
 template<> inline MultiMaskPartialKeyMapping<1u>::MultiMaskPartialKeyMapping(MultiMaskPartialKeyMapping<1u> const & src)
 	: PartialKeyMappingBase()
 {
 	*reinterpret_cast<uint64_t*>(this) = *reinterpret_cast<uint64_t const *>(&src);
 	SIMDHelper<128>::store(SIMDHelper<128>::toRegister(&(src.mExtractionPositions)), &mExtractionPositions);
+	setExtendedPositions(src.getExtendedPositionsRegister());
 }
 
 template<> inline MultiMaskPartialKeyMapping<2u>::MultiMaskPartialKeyMapping(MultiMaskPartialKeyMapping<2u> const & src)
@@ -48,6 +59,7 @@ template<> inline MultiMaskPartialKeyMapping<2u>::MultiMaskPartialKeyMapping(Mul
 {
 	*reinterpret_cast<uint64_t*>(this) = *reinterpret_cast<uint64_t const *>(&src);
 	SIMDHelper<256>::store(SIMDHelper<256>::toRegister(&(src.mExtractionPositions)), &mExtractionPositions);
+	setExtendedPositions(src.getExtendedPositionsRegister());
 }
 
 template<> inline MultiMaskPartialKeyMapping<4u>::MultiMaskPartialKeyMapping(MultiMaskPartialKeyMapping<4u> const & src)
@@ -56,6 +68,7 @@ template<> inline MultiMaskPartialKeyMapping<4u>::MultiMaskPartialKeyMapping(Mul
 	*reinterpret_cast<uint64_t*>(this) = *reinterpret_cast<uint64_t const *>(&src);
 	setPositions(src.getPositionsRegister());
 	setExtractionData(src.getExtractionDataRegister());
+	setExtendedPositions(src.getExtendedPositionsRegister());
 }
 
 template<> inline MultiMaskPartialKeyMapping<4u>::MultiMaskPartialKeyMapping(MultiMaskPartialKeyMapping<2u> const & src)
@@ -64,6 +77,7 @@ template<> inline MultiMaskPartialKeyMapping<4u>::MultiMaskPartialKeyMapping(Mul
 	*reinterpret_cast<uint64_t*>(this) = *reinterpret_cast<uint64_t const *>(&src);
 	setPositions(SIMDHelper<256u>::convertWithZeroExtend(src.getPositionsRegister()));
 	setExtractionData(SIMDHelper<256u>::convertWithZeroExtend(src.getExtractionDataRegister()));
+	setExtendedPositions(SIMDHelper<256u>::convertWithZeroExtend(src.getExtendedPositionsRegister()));
 }
 
 template<> inline MultiMaskPartialKeyMapping<2u>::MultiMaskPartialKeyMapping(MultiMaskPartialKeyMapping<1u> const & src)
@@ -72,6 +86,7 @@ template<> inline MultiMaskPartialKeyMapping<2u>::MultiMaskPartialKeyMapping(Mul
 	*reinterpret_cast<uint64_t*>(this) = *reinterpret_cast<uint64_t const *>(&src);
 	setPositions(SIMDHelper<128u>::convertWithZeroExtend(src.getPositionsRegister()));
 	setExtractionData(SIMDHelper<128u>::convertWithZeroExtend(src.getExtractionDataRegister()));
+	setExtendedPositions(SIMDHelper<128u>::convertWithZeroExtend(src.getExtendedPositionsRegister()));
 }
 
 template<unsigned int numberExtractionMasks> inline MultiMaskPartialKeyMapping<numberExtractionMasks>::MultiMaskPartialKeyMapping(
@@ -134,6 +149,13 @@ template<unsigned int numberExtractionMasks> inline MultiMaskPartialKeyMapping<n
 		SIMDHelperType::shiftLeftOneByte(SIMDHelperType::binaryAnd(maskForLessSignificantBytes, extractionDataRegister))
 	));
 
+	SIMDRegisterType extractionExtendedPositionRegister = existing.getExtendedPositionsRegister();
+	SIMDRegisterType movedExtendedPositions = SIMDHelperType::shiftLeftOneByte(SIMDHelperType::binaryAnd(maskForLessSignificantBytes, extractionExtendedPositionRegister));
+	setExtendedPositions(SIMDHelperType::binaryOr(
+		SIMDHelperType::binaryAndNot(maskForLessSignificantBytes, extractionExtendedPositionRegister),
+		movedExtendedPositions
+	));
+
 	setExtractionByte(extractionByteIndex, significantKeyInformation.getExtractionByte());
 	setExtractionBytePosition(extractionByteIndex, significantKeyInformation.mByteIndex);
 }
@@ -181,6 +203,19 @@ template<unsigned int numberExtractionMasks> inline MultiMaskPartialKeyMapping<n
 	mNumberExtractionBytes(numberBytesUsed), mNumberKeyBits(numberBitsUsed),
 	mExtractionPositions(extractionPositions),
 	mExtractionData(extractionData)
+{
+}
+
+template<unsigned int numberExtractionMasks> inline MultiMaskPartialKeyMapping<numberExtractionMasks>::MultiMaskPartialKeyMapping(
+	uint16_t const numberBytesUsed, uint16_t const numberBitsUsed,
+	ExtractionDataArray const & extractionPositions,
+	ExtractionDataArray const & extractionData,
+	ExtractionDataArray const & extractionExtendedPositions
+) : PartialKeyMappingBase(getMostSignificantBitIndexInByte(getExtractionByteAt(extractionData,0)) + ((getExtractionByteAt(extractionPositions, 0) + getExtractionByteAt(extractionExtendedPositions, 0) * 256) * 8), getLeastSignificantBitIndexInByte(getExtractionByteAt(extractionData, numberBytesUsed - 1)) + ((getExtractionByteAt(extractionPositions, numberBytesUsed - 1) + getExtractionByteAt(extractionExtendedPositions, numberBytesUsed - 1) * 256) * 8)),
+	mNumberExtractionBytes(numberBytesUsed), mNumberKeyBits(numberBitsUsed),
+	mExtractionPositions(extractionPositions),
+	mExtractionData(extractionData),
+	mExtractionExtendedPositions(extractionExtendedPositions)
 {
 }
 
@@ -271,6 +306,7 @@ inline auto MultiMaskPartialKeyMapping<numberExtractionMasks>::extract(uint32_t 
 			return operation(SingleMaskPartialKeyMapping(
 				reinterpret_cast<uint8_t const *>(mExtractionPositions.data()),
 				reinterpret_cast<uint8_t const *>(extractionDataForBitsUsed.data()),
+				reinterpret_cast<uint8_t const *>(mExtractionExtendedPositions.data()),
 				bytesUsedMask,
 				mostSignificantBitPosition,
 				leastSignificantBitPosition
@@ -337,59 +373,80 @@ template<unsigned int numberExtractionMasks> template<typename Operation> inline
 	uint8_t mostSignificantExtractionBytePosition = getExtractionBytePosition(0);
 	size_t extractionByteRange = leasSignificantExtractionBytePosition - mostSignificantExtractionBytePosition;
 	if(extractionByteRange < 8) {
-		operation(SingleMaskPartialKeyMapping(reinterpret_cast<uint8_t const*>(mExtractionPositions.data()), reinterpret_cast<uint8_t const*>(mExtractionData.data()), getMaskForExtractionBytesUsed(), mMostSignificantDiscriminativeBitIndex, mLeastSignificantDiscriminativeBitIndex));
+		operation(SingleMaskPartialKeyMapping(reinterpret_cast<uint8_t const*>(mExtractionPositions.data()), reinterpret_cast<uint8_t const*>(mExtractionData.data()), reinterpret_cast<uint8_t const*>(mExtractionExtendedPositions.data()), getMaskForExtractionBytesUsed(), mMostSignificantDiscriminativeBitIndex, mLeastSignificantDiscriminativeBitIndex));
 	} else if(getNumberExtractionBytes() <= 8) {
 		std::array<uint64_t, 1> temporaryExtractionData = { mExtractionData[0] };
 		std::array<uint64_t, 1> temporaryExtractionPositions = { mExtractionPositions[0] };
-		operation(MultiMaskPartialKeyMapping<1>(mNumberExtractionBytes, mNumberKeyBits, temporaryExtractionPositions, temporaryExtractionData));
+		std::array<uint64_t, 1> temporaryExtractionExtendedPositions = { mExtractionExtendedPositions[0] };
+		operation(MultiMaskPartialKeyMapping<1>(mNumberExtractionBytes, mNumberKeyBits, temporaryExtractionPositions, temporaryExtractionData, temporaryExtractionExtendedPositions));
 	} else if(getNumberExtractionBytes() <= 16) {
 		std::array<uint64_t, 2> temporaryExtractionData = { mExtractionData[0], mExtractionData[1] };
 		std::array<uint64_t, 2> temporaryExtractionPositions = { mExtractionPositions[0], mExtractionPositions[1] };
-		operation(MultiMaskPartialKeyMapping<2>(mNumberExtractionBytes, mNumberKeyBits, temporaryExtractionPositions, temporaryExtractionData));
+		std::array<uint64_t, 2> temporaryExtractionExtendedPositions = { mExtractionExtendedPositions[0], mExtractionExtendedPositions[1]};
+		operation(MultiMaskPartialKeyMapping<2>(mNumberExtractionBytes, mNumberKeyBits, temporaryExtractionPositions, temporaryExtractionData, temporaryExtractionExtendedPositions));
 	} else {
 		operation(*this);
 	}
 };
 
 template<> inline __m64 MultiMaskPartialKeyMapping<1u>::getMaskForPositionsLargerOrEqualTo(unsigned int bytePosition) const {
-	__m64 bytePositionSearchRegister = _mm_set1_pi8(bytePosition);
+	__m64 byteExtendedPositionSearchRegister = _mm_set1_pi8(bytePosition / 256);
+	__m64 bytePositionSearchRegister = _mm_set1_pi8(bytePosition % 256);
+	__m64 extendedPositionsRegister = getExtendedPositionsRegister();
 	__m64 positionsRegister = getPositionsRegister();
-	return _mm_cmpeq_pi8( positionsRegister, _mm_max_pu8(bytePositionSearchRegister, positionsRegister));
+	__m64 highMask = _mm_cmpeq_pi8(extendedPositionsRegister, _mm_max_pu8(byteExtendedPositionSearchRegister, extendedPositionsRegister));
+	__m64 lowMask = _mm_cmpeq_pi8(positionsRegister, _mm_max_pu8(bytePositionSearchRegister, positionsRegister));
+
+	return SIMDHelperType::binaryAnd(highMask, lowMask);
 }
 
 template<> inline __m128i MultiMaskPartialKeyMapping<2u>::getMaskForPositionsLargerOrEqualTo(unsigned int bytePosition) const {
-	__m128i bytePositionSearchRegister = _mm_set1_epi8(bytePosition);
-	__m128i positionsRegister= getPositionsRegister();
-	return _mm_cmpeq_epi8( positionsRegister, _mm_max_epu8(bytePositionSearchRegister, positionsRegister));
+	__m128i byteExtendedPositionSearchRegister = _mm_set1_epi8(bytePosition / 256);
+	__m128i bytePositionSearchRegister = _mm_set1_epi8(bytePosition % 256);
+	__m128i extendedPositionsRegister = getExtendedPositionsRegister();
+	__m128i positionsRegister = getPositionsRegister();
+	__m128i highMask = _mm_cmpeq_epi8(extendedPositionsRegister, _mm_max_epu8(byteExtendedPositionSearchRegister, extendedPositionsRegister));
+	__m128i lowMask = _mm_cmpeq_epi8(positionsRegister, _mm_max_epu8(bytePositionSearchRegister, positionsRegister));
+
+	return SIMDHelperType::binaryAnd(highMask, lowMask);
 }
 
 template<> inline __m256i MultiMaskPartialKeyMapping<4u>::getMaskForPositionsLargerOrEqualTo(unsigned int bytePosition) const {
-	__m256i bytePositionSearchRegister = _mm256_set1_epi8(bytePosition);
-	__m256i positionsRegister= getPositionsRegister();
-	return _mm256_cmpeq_epi8(positionsRegister, _mm256_max_epu8(bytePositionSearchRegister, positionsRegister));
+	__m256i byteExtendedPositionSearchRegister = _mm256_set1_epi8(bytePosition / 256);
+	__m256i bytePositionSearchRegister = _mm256_set1_epi8(bytePosition % 256);
+	__m256i extendedPositionsRegister = getExtendedPositionsRegister();
+	__m256i positionsRegister = getPositionsRegister();
+	__m256i highMask = _mm256_cmpeq_epi8(extendedPositionsRegister, _mm256_max_epu8(byteExtendedPositionSearchRegister, extendedPositionsRegister));
+	__m256i lowMask = _mm256_cmpeq_epi8(positionsRegister, _mm256_max_epu8(bytePositionSearchRegister, positionsRegister));
+
+	return SIMDHelperType::binaryAnd(highMask, lowMask);
 }
 
 template<> inline void MultiMaskPartialKeyMapping<1u>::initializeDataAndPositionsWithZero() {
 	mExtractionPositions[0] = 0;
 	mExtractionData[0] = 0;
+	mExtractionExtendedPositions[0] = 0;
 }
 
 template<> inline void MultiMaskPartialKeyMapping<2u>::initializeDataAndPositionsWithZero() {
 	_mm256_storeu_si256(reinterpret_cast<__m256i*>(mExtractionPositions.data()), _mm256_setzero_si256());
+	_mm_storeu_si128(reinterpret_cast<__m128i*>(mExtractionExtendedPositions.data()), _mm_setzero_si128());
 }
 
 template<> inline void MultiMaskPartialKeyMapping<4u>::initializeDataAndPositionsWithZero() {
 	__m256i zero = _mm256_setzero_si256();
 	_mm256_storeu_si256(reinterpret_cast<__m256i*>(mExtractionPositions.data()), zero);
 	_mm256_storeu_si256(reinterpret_cast<__m256i*>(mExtractionData.data()), zero);
+	_mm256_storeu_si256(reinterpret_cast<__m256i*>(mExtractionExtendedPositions.data()), zero);
 }
 
 template<unsigned int numberExtractionMasks> inline typename MultiMaskPartialKeyMapping<numberExtractionMasks>::ExtractionDataArray MultiMaskPartialKeyMapping<numberExtractionMasks>::mapInput(uint8_t const __restrict__ * keyBytes) const {
 	ExtractionDataArray mappedInput = zeroInitializedArray();
 	uint8_t* __restrict__ mappedInputBytes = reinterpret_cast<uint8_t*>(mappedInput.data());
-	uint8_t const * __restrict__ positions = reinterpret_cast<uint8_t const* >(mExtractionPositions.data());
+	uint8_t const * __restrict__ lowPositions = reinterpret_cast<uint8_t const* >(mExtractionPositions.data());
+	uint8_t const * __restrict__ highPositions = reinterpret_cast<uint8_t const* >(mExtractionExtendedPositions.data());
 	for(int i=0; i < mNumberExtractionBytes; ++i) {
-		mappedInputBytes[i] = keyBytes[positions[i]];
+		mappedInputBytes[i] = keyBytes[highPositions[i] * 256 + lowPositions[i]];
 	}
 	return std::move(mappedInput);
 };
@@ -454,9 +511,16 @@ template<unsigned int numberExtractionMasks> inline uint32_t MultiMaskPartialKey
 }
 
 template<unsigned int numberExtractionMasks> inline uint32_t MultiMaskPartialKeyMapping<numberExtractionMasks>::getExtractionByteIndexForPosition(uint16_t bytePosition) const {
-	SIMDRegisterType needle = SIMDHelperType::set1_epi8(bytePosition);
-	SIMDRegisterType haystack = getPositionsRegister();
-	uint32_t bytePositionMask = SIMDHelperType::moveMask8(SIMDHelperType::cmpeq_epi8(needle, haystack)) & getMaskForExtractionBytesUsed();
+	SIMDRegisterType needle1 = SIMDHelperType::set1_epi8(bytePosition / 256);
+	SIMDRegisterType needle2 = SIMDHelperType::set1_epi8(bytePosition % 256);
+	SIMDRegisterType haystack1 = getExtendedPositionsRegister();
+	SIMDRegisterType haystack2 = getPositionsRegister();
+	uint32_t bytePositionMask;
+	if (SIMDHelperType::moveMask8(SIMDHelperType::cmpeq_epi8(needle1, haystack1)) == 0) {
+		bytePositionMask = SIMDHelperType::moveMask8(SIMDHelperType::cmpeq_epi8(needle2, haystack2)) & getMaskForExtractionBytesUsed();
+	} else {
+		bytePositionMask = SIMDHelperType::moveMask8(SIMDHelperType::cmpeq_epi8(needle1, haystack1)) & SIMDHelperType::moveMask8(SIMDHelperType::cmpeq_epi8(needle2, haystack2)) & getMaskForExtractionBytesUsed();
+	}
 	assert(bytePositionMask != 0);
 	assert(_mm_popcnt_u32(bytePositionMask) == 1);
 	return _tzcnt_u32(bytePositionMask);
@@ -558,12 +622,13 @@ template<unsigned int numberExtractionMasks> inline uint16_t MultiMaskPartialKey
 }
 
 
-template<unsigned int numberExtractionMasks> inline uint8_t MultiMaskPartialKeyMapping<numberExtractionMasks>::getExtractionBytePosition(unsigned int index) const {
-	return reinterpret_cast<uint8_t const *>(mExtractionPositions.data())[index];
+template<unsigned int numberExtractionMasks> inline uint16_t MultiMaskPartialKeyMapping<numberExtractionMasks>::getExtractionBytePosition(unsigned int index) const {
+	return reinterpret_cast<uint8_t const *>(mExtractionExtendedPositions.data())[index] * 256 + reinterpret_cast<uint8_t const *>(mExtractionPositions.data())[index];
 }
 
-template<unsigned int numberExtractionMasks> inline void MultiMaskPartialKeyMapping<numberExtractionMasks>::setExtractionBytePosition(unsigned int index, uint8_t extractionByte) {
-	reinterpret_cast<uint8_t *>(mExtractionPositions.data())[index] = extractionByte;
+template<unsigned int numberExtractionMasks> inline void MultiMaskPartialKeyMapping<numberExtractionMasks>::setExtractionBytePosition(unsigned int index, uint16_t extractionByte) {
+	reinterpret_cast<uint8_t *>(mExtractionPositions.data())[index] = extractionByte % 256;
+	reinterpret_cast<uint8_t *>(mExtractionExtendedPositions.data())[index] = extractionByte / 256;
 }
 
 template<unsigned int numberExtractionMasks> inline uint8_t MultiMaskPartialKeyMapping<numberExtractionMasks>::getExtractionByte(unsigned int index) const {

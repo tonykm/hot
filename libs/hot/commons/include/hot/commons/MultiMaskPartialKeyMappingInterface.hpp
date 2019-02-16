@@ -32,7 +32,7 @@ public:
 	using SIMDRegisterType = typename SIMDHelperType::SIMDRegisterType;
 	using ExtractionDataArray = std::array<uint64_t, numberExtractionMasks>;
 
-private:
+protected:
 
 	uint16_t mNumberExtractionBytes;
 	uint16_t mNumberKeyBits;
@@ -40,11 +40,15 @@ private:
 	ExtractionDataArray mExtractionPositions;
 	ExtractionDataArray mExtractionData;
 
+	ExtractionDataArray mExtractionExtendedPositions;
+
 	inline SIMDRegisterType getPositionsRegister() const;
 	inline SIMDRegisterType getExtractionDataRegister() const;
-private:
+	inline SIMDRegisterType getExtendedPositionsRegister() const;
+protected:
 	inline void setPositions(SIMDRegisterType positions);
 	inline void setExtractionData(SIMDRegisterType data);
+	inline void setExtendedPositions(SIMDRegisterType extendedPositions);
 
 public:
 	inline MultiMaskPartialKeyMapping(MultiMaskPartialKeyMapping<numberExtractionMasks> const & src);
@@ -96,6 +100,13 @@ public:
 		uint16_t const numberBytesUsed, uint16_t const bitsUsed,
 		ExtractionDataArray const & mExtractionPositions,
 		ExtractionDataArray const & mExtractionData
+	);
+
+	inline MultiMaskPartialKeyMapping(
+		uint16_t const numberBytesUsed, uint16_t const bitsUsed,
+		ExtractionDataArray const & mExtractionPositions,
+		ExtractionDataArray const & mExtractionData,
+		ExtractionDataArray const & mExtractionExtendedPositions
 	);
 
 protected:
@@ -177,7 +188,7 @@ public:
 public:
 	inline bool hasUnusedBytes() const;
 
-private:
+protected:
 	inline SIMDRegisterType getMaskForPositionsLargerOrEqualTo(unsigned int bytePosition) const;
 
 	inline void initializeDataAndPositionsWithZero();
@@ -206,7 +217,7 @@ public:
 	 */
 	inline uint32_t getAllMaskBits() const;
 
-private:
+protected:
 	inline uint32_t getExtractionByteIndexForPosition(uint16_t bytePosition) const;
 
 	/**
@@ -262,9 +273,9 @@ public:
 	 */
 	inline uint16_t getLeastSignificantBitIndex(uint32_t mask) const;
 
-	inline uint8_t getExtractionBytePosition(unsigned int index) const;
+	inline uint16_t getExtractionBytePosition(unsigned int index) const;
 
-	inline void setExtractionBytePosition(unsigned int index, uint8_t byte);
+	inline void setExtractionBytePosition(unsigned int index, uint16_t byte);
 
 	inline uint8_t getExtractionByte(unsigned int index) const;
 

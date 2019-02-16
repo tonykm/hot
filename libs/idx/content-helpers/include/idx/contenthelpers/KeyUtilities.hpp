@@ -40,7 +40,7 @@ template<typename KeyType> constexpr inline __attribute__((always_inline)) size_
 	return sizeof(KeyType);
 }
 
-constexpr size_t MAX_STRING_KEY_LENGTH = 255;
+constexpr size_t MAX_STRING_KEY_LENGTH = 8191;
 template<> constexpr inline size_t getMaxKeyLength<char const *>() {
 	return MAX_STRING_KEY_LENGTH;
 }

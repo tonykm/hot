@@ -66,11 +66,11 @@ inline uint getByteRangeSize(uint mostSignificantBitIndex, uint leastSignificant
 	return getByteIndex(leastSignificantBitIndex) - getByteIndex(mostSignificantBitIndex);
 }
 
-constexpr inline uint16_t convertBytesToBits(uint16_t const byteIndex) {
+constexpr inline uint convertBytesToBits(uint16_t const byteIndex) {
 	return byteIndex * 8;
 }
 
-constexpr inline uint16_t bitPositionInByte(uint16_t const absolutBitPosition) {
+constexpr inline uint16_t bitPositionInByte(uint const absolutBitPosition) {
 	return absolutBitPosition % 8;
 }
 
@@ -84,8 +84,8 @@ inline bool isNoMissmatch(std::pair<uint8_t const*, uint8_t const*> const & miss
 	return missmatch.first == (key1 + keyLength) && missmatch.second == (key2 + keyLength);
 }
 
-inline bool isBitSet(uint8_t const * existingRawKey, uint16_t const mAbsoluteBitIndex) {
-	return (existingRawKey[getByteIndex(mAbsoluteBitIndex)] & (0b10000000 >> bitPositionInByte(mAbsoluteBitIndex))) > 0;
+inline bool isBitSet(uint8_t const * existingRawKey, uint const mAbsoluteBitIndex) {
+	return (existingRawKey[getByteIndex(mAbsoluteBitIndex)] & (0b1000000000000000 >> bitPositionInByte(mAbsoluteBitIndex))) > 0;
 }
 
 inline uint16_t getLeastSignificantBitIndexInByte(uint8_t byte) {

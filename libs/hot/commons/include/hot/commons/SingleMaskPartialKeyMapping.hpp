@@ -27,7 +27,7 @@ inline SingleMaskPartialKeyMapping::SingleMaskPartialKeyMapping(DiscriminativeBi
 	: PartialKeyMappingBase(discriminativeBit.mAbsoluteBitIndex, discriminativeBit.mAbsoluteBitIndex),
 	  mOffsetInBytes(getSuccesiveByteOffsetForMostRightByte(discriminativeBit.mByteIndex)),
 	  mSuccessiveExtractionMask(getSuccessiveMaskForBit(discriminativeBit.mByteIndex, discriminativeBit.mByteRelativeBitIndex)) {
-	assert(mOffsetInBytes < 255);
+	assert(mOffsetInBytes < 65535);
 }
 
 inline SingleMaskPartialKeyMapping::SingleMaskPartialKeyMapping(
@@ -40,7 +40,20 @@ inline SingleMaskPartialKeyMapping::SingleMaskPartialKeyMapping(
 	mOffsetInBytes(getSuccesiveByteOffsetForLeastSignificantBitIndex(leastSignificantBitIndex)),
 	mSuccessiveExtractionMask(getSuccessiveExtractionMaskFromRandomBytes(extractionBytePositions, extractionByteData, extractionBytesUsedMask, mOffsetInBytes))
 {
-	assert(mOffsetInBytes < 255);
+	assert(mOffsetInBytes < 65535);
+}
+
+inline SingleMaskPartialKeyMapping::SingleMaskPartialKeyMapping(
+	uint8_t const * extractionBytePositions,
+	uint8_t const * extractionByteData,
+	uint8_t const * extractionByteExtendedPositions,
+	uint32_t const extractionBytesUsedMask,
+	uint16_t const mostSignificantBitIndex,
+	uint16_t const leastSignificantBitIndex
+) : PartialKeyMappingBase(mostSignificantBitIndex, leastSignificantBitIndex),
+	mOffsetInBytes(getSuccesiveByteOffsetForLeastSignificantBitIndex(leastSignificantBitIndex)),
+	mSuccessiveExtractionMask(getSuccessiveExtractionMaskFromRandomBytes(extractionBytePositions, extractionByteData, extractionByteExtendedPositions, extractionBytesUsedMask, mOffsetInBytes))
+{
 }
 
 
@@ -54,7 +67,7 @@ inline SingleMaskPartialKeyMapping::SingleMaskPartialKeyMapping(
 		| (existing.mSuccessiveExtractionMask >> (convertBytesToBits(mOffsetInBytes - existing.mOffsetInBytes)))
 	)
 {
-	assert(mOffsetInBytes < 255);
+	assert(mOffsetInBytes < 65535);
 }
 
 
@@ -65,7 +78,7 @@ inline SingleMaskPartialKeyMapping::SingleMaskPartialKeyMapping(
 ) : SingleMaskPartialKeyMapping(existing, existing.getSuccessiveMaskForMask(maskBitsNeeded))
 {
 	assert(_mm_popcnt_u32(maskBitsNeeded) >= 1);
-	assert(mOffsetInBytes < 255);
+	assert(mOffsetInBytes < 65535);
 }
 
 inline uint16_t SingleMaskPartialKeyMapping::calculateNumberBitsUsed() const {
@@ -227,6 +240,24 @@ inline uint64_t SingleMaskPartialKeyMapping::getSuccessiveExtractionMaskFromRand
 	while(extractionBytesUsedMask > 0) {
 		uint extractionByteIndex = __tzcnt_u32(extractionBytesUsedMask);
 		uint targetExtractionBytePosition = extractionBytePositions[extractionByteIndex] - offsetInBytes;
+		successiveExtractionBytes[targetExtractionBytePosition] = extractionByteData[extractionByteIndex];
+		extractionBytesUsedMask = _blsr_u32(extractionBytesUsedMask);
+	}
+	return successiveExtractionMask;
+}
+
+inline uint64_t SingleMaskPartialKeyMapping::getSuccessiveExtractionMaskFromRandomBytes(
+	uint8_t const * extractionBytePositions,
+	uint8_t const * extractionByteData,
+	uint8_t const * extractionByteExtendedPositions,
+	uint32_t extractionBytesUsedMask,
+	uint32_t const offsetInBytes
+) {
+	uint64_t successiveExtractionMask = 0ul;
+	uint8_t* successiveExtractionBytes = reinterpret_cast<uint8_t*>(&successiveExtractionMask);
+	while(extractionBytesUsedMask > 0) {
+		uint extractionByteIndex = __tzcnt_u32(extractionBytesUsedMask);
+		uint targetExtractionBytePosition = extractionByteExtendedPositions[extractionByteIndex] * 256 + extractionBytePositions[extractionByteIndex] - offsetInBytes;
 		successiveExtractionBytes[targetExtractionBytePosition] = extractionByteData[extractionByteIndex];
 		extractionBytesUsedMask = _blsr_u32(extractionBytesUsedMask);
 	}

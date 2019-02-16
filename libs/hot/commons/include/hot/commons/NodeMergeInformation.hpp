@@ -66,13 +66,16 @@ private:
 		//AVX-512 ?
 		alignas(8) std::array<uint64_t, 4> bytePositions;
 		alignas(8) std::array<uint64_t, 4> byteMasks;
+		alignas(8) std::array<uint64_t, 4> byteExtendedPositions;
 		alignas(8) std::array<uint8_t, 256> result;
 
 		std::fill(byteMasks.begin(), byteMasks.end(), 0);
 		std::fill(bytePositions.begin(), bytePositions.end(), 0);
+		std::fill(byteExtendedPositions.begin(), byteExtendedPositions.end(), 0);
 
 		uint8_t* rawBytePosition = reinterpret_cast<uint8_t*>(bytePositions.data());
 		uint8_t* rawByteMasks = reinterpret_cast<uint8_t*>(byteMasks.data());
+		uint8_t* rawByteExtendedPosition = reinterpret_cast<uint8_t*>(byteExtendedPositions.data());
 
 		uint16_t nextBytePositionToUse = 0u;
 
@@ -96,8 +99,9 @@ private:
 					unsigned int rootByteIndex = getByteIndex(rootBit);
 					uint8_t rootByteMask = DiscriminativeBit(rootBit, 1).getExtractionByte();
 					if(rootByteIndex < absoluteUsedBytesIndex) {
-						rawBytePosition[0] = rootByteIndex;
+						rawBytePosition[0] = rootByteIndex % 256;
 						rawByteMasks[0] = rootByteMask;
+						rawByteExtendedPosition[0] = rootByteIndex / 256;
 						nextBytePositionToUse = 1;
 					} else {
 						currentByteMask |= rootByteMask;
@@ -108,8 +112,9 @@ private:
 				if(nextBytePositionToUse == 32) {
 					return; //no optional value
 				}
-				rawBytePosition[nextBytePositionToUse] = absoluteUsedBytesIndex;
+				rawBytePosition[nextBytePositionToUse] = absoluteUsedBytesIndex % 256;
 				rawByteMasks[nextBytePositionToUse] = currentByteMask;
+				rawByteExtendedPosition[nextBytePositionToUse] = absoluteUsedBytesIndex / 256;
 				++nextBytePositionToUse;
 			}
 		}
@@ -118,7 +123,7 @@ private:
 		if(numberDiscriminativeBits <= 32) {
 			mHasMergedMask = true;
 			new (mRawMergedMask.data()) MultiMaskPartialKeyMapping<4>(
-				nextBytePositionToUse, numberDiscriminativeBits, bytePositions, byteMasks
+				nextBytePositionToUse, numberDiscriminativeBits, bytePositions, byteMasks, byteExtendedPositions
 			);
 		} else {
 			assert(false);

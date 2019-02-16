@@ -48,6 +48,15 @@ public:
 		uint16_t const leastSignificantBitIndex
 	);
 
+	inline SingleMaskPartialKeyMapping(
+		uint8_t const* extractionBytePositions,
+		uint8_t const * extractionByteData,
+		uint8_t const* extractionByteExtendedPositions,
+		uint32_t const extractionBytesUsedMask,
+		uint16_t const mostSignificantBitIndex,
+		uint16_t const leastSignificantBitIndex
+	);
+
 	/**
 	 * Creates a new single mask partial key mapping by adding a new discriminating bit.
 	 * Be aware that this is only possible if the all existing discriminative bits and the new discriminating bit lie withing an 8 byte range
@@ -193,6 +202,14 @@ private:
 	static inline uint64_t getSuccessiveExtractionMaskFromRandomBytes(
 		uint8_t const * extractionBytePositions,
 		uint8_t const * extractionByteData,
+		uint32_t extractionBytesUsedMask,
+		uint32_t const offsetInBytes
+	);
+
+	static inline uint64_t getSuccessiveExtractionMaskFromRandomBytes(
+		uint8_t const * extractionBytePositions,
+		uint8_t const * extractionByteData,
+		uint8_t const * extractionByteExtendedPositions,
 		uint32_t extractionBytesUsedMask,
 		uint32_t const offsetInBytes
 	);
