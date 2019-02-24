@@ -4,7 +4,7 @@
 	branch = tbb_2018
 [submodule "third-pary/boost"]
 	path = third-party/boost-cmake
-	url = https://github.com/Orphis/boost-cmake.git
+	url = https://github.com/palmerc/boost-cmake.git
 	branch = boost1.66.0
 [submodule "third-party/boost-hana"]
 	path = third-party/boost-hana
