@@ -13,7 +13,7 @@
 namespace hot { namespace singlethreaded {
 
 constexpr size_t SIMD_COB_TRIE_NODE_ALIGNMENT = 8;
-constexpr size_t MAXIMUM_NODE_SIZE_IN_LONGS = 60u;
+constexpr size_t MAXIMUM_NODE_SIZE_IN_LONGS = 64u;
 
 struct alignas(SIMD_COB_TRIE_NODE_ALIGNMENT) HOTSingleThreadedNodeBase {
 	using const_iterator = HOTSingleThreadedChildPointer const *;
