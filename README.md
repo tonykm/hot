@@ -152,5 +152,5 @@ Methods contained only in the single threaded version:
 The provided implementations currently have the following limitations:
 
  * Deletion operations are not supported by the concurrent implementation of HOT
- * The length of the keys are restricted to 8192 bytes so far, and can be extended in further if needed.
+ * The length of the keys are restricted to 8191 bytes so far, and can be extended in further if needed.
  * The maximum length of the supported tuple identifiers and therefore the keys which can directly be embedded into the indexes are restricted to 63 bits.
