@@ -374,8 +374,18 @@ template<typename DiscriminativeBitsRepresentation, typename PartialKeyType> inl
 	return getPointers() + toResultIndex(mPartialKeys.search(mDiscriminativeBitsRepresentation.extractMask(keyBytes)));
 }
 
+template<typename DiscriminativeBitsRepresentation, typename PartialKeyType> inline HOTSingleThreadedChildPointer const * HOTSingleThreadedNode<DiscriminativeBitsRepresentation, PartialKeyType>::search(uint8_t const * keyBytes, uint keyLength) const {
+	return getPointers() + toResultIndex(mPartialKeys.search(mDiscriminativeBitsRepresentation.extractMask(keyBytes, keyLength)));
+}
+
 template<typename DiscriminativeBitsRepresentation, typename PartialKeyType> inline HOTSingleThreadedChildPointer* HOTSingleThreadedNode<DiscriminativeBitsRepresentation, PartialKeyType>::searchForInsert(hot::commons::SearchResultForInsert & searchResultOut, uint8_t const * keyBytes) const {
 	uint32_t resultIndex = toResultIndex(mPartialKeys.search(mDiscriminativeBitsRepresentation.extractMask(keyBytes)));
+	searchResultOut.init(resultIndex, mDiscriminativeBitsRepresentation.mMostSignificantDiscriminativeBitIndex);
+	return mFirstChildPointer + resultIndex;
+}
+
+template<typename DiscriminativeBitsRepresentation, typename PartialKeyType> inline HOTSingleThreadedChildPointer* HOTSingleThreadedNode<DiscriminativeBitsRepresentation, PartialKeyType>::searchForInsert(hot::commons::SearchResultForInsert & searchResultOut, uint8_t const * keyBytes, uint keyLength) const {
+	uint32_t resultIndex = toResultIndex(mPartialKeys.search(mDiscriminativeBitsRepresentation.extractMask(keyBytes, keyLength)));
 	searchResultOut.init(resultIndex, mDiscriminativeBitsRepresentation.mMostSignificantDiscriminativeBitIndex);
 	return mFirstChildPointer + resultIndex;
 }

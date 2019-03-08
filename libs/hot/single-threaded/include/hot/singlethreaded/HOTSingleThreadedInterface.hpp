@@ -46,7 +46,7 @@ constexpr uint32_t MAXIMUM_NUMBER_NODE_ENTRIES = 32u;
  * @tparam ValueType The type of the value to index. The ValueType must no exceed 8 bytes and may only use the less significant 63 bits. It is therefore perfectly suited to use tuple identifiers as values.
  * @tparam KeyExtractor A Function given the ValueType returns a key, which by using the corresponding functions in idx::contenthelpers can be converted to a big endian ordered byte array.
  */
-template<typename ValueType, template <typename> typename KeyExtractor> struct HOTSingleThreaded {
+template<typename ValueType, template <typename> typename KeyExtractor> struct HOTSingleThreadedBase {
 	static_assert(sizeof(ValueType) <= 8, "Only value types which can be stored in a pointer are allowed");
 	static KeyExtractor<ValueType> extractKey;
 	using KeyType = decltype(extractKey(std::declval<ValueType>()));
@@ -60,25 +60,17 @@ template<typename ValueType, template <typename> typename KeyExtractor> struct H
 	/**
 	 * Creates an empty order preserving index structure based on the HOT algorithm
 	 */
-	HOTSingleThreaded();
-	HOTSingleThreaded(HOTSingleThreaded const & other) = delete;
-	HOTSingleThreaded(HOTSingleThreaded && other);
+	HOTSingleThreadedBase();
+	HOTSingleThreadedBase(HOTSingleThreadedBase const & other) = delete;
+	HOTSingleThreadedBase(HOTSingleThreadedBase && other);
 
-	HOTSingleThreaded& operator=(HOTSingleThreaded const & other) = delete;
-	HOTSingleThreaded& operator=(HOTSingleThreaded && other);
+	HOTSingleThreadedBase& operator=(HOTSingleThreadedBase const & other) = delete;
+	HOTSingleThreadedBase& operator=(HOTSingleThreadedBase && other);
 
-	~HOTSingleThreaded();
+	~HOTSingleThreadedBase();
 
 	inline bool isEmpty() const;
 	inline bool isRootANode() const;
-
-	/**
-	 * For a given key it looks up the stored value
-	 *
-	 * @param key the key to lookup
-	 * @return the looked up value. The result is valid, if a matching record was found.
-	 */
-	inline __attribute__((always_inline)) idx::contenthelpers::OptionalValue<ValueType> lookup(KeyType const &key);
 
 	idx::contenthelpers::OptionalValue <ValueType> extractAndMatchLeafValue( HOTSingleThreadedChildPointer const & current, KeyType const &key);
 
@@ -93,28 +85,13 @@ template<typename ValueType, template <typename> typename KeyExtractor> struct H
 
 	inline unsigned int searchForInsert(uint8_t const * keyBytes, std::array<HOTSingleThreadedInsertStackEntry, 64> & insertStack);
 
-	inline bool remove(KeyType const & key);
+	inline unsigned int searchForInsert(uint8_t const * keyBytes, uint keyLength, std::array<HOTSingleThreadedInsertStackEntry, 64> & insertStack);
 
-	/**
-	 * Inserts the given value into the index. The value is inserted according to its keys value.
-	 * In case the index already contains a value for the corresponding key, the value is not inserted.
-	 *
-	 * @param value the value to insert.
-	 * @return true if the value can be inserted, false if the index already contains a value for the corresponding key
-	 */
-	inline bool insert(ValueType const & value);
 	inline bool insertWithInsertStack(std::array<HOTSingleThreadedInsertStackEntry, 64> &insertStack, unsigned int leafDepth,
 									  KeyType const &existingKey, uint8_t const *newKeyBytes, ValueType const &newValue);
 
-	/**
-	 * Executes an upsert for the given value.
-	 * If the index does not contain a value for the value's key, the upsert operation executes an insert.
-	 * It the index already contains a value for the value's key, this previously contained value is replaced and returned
-	 *
-	 * @param newValue the value to upsert.
-	 * @return the value of a previously contained value for the same key or an invalid result otherwise
-	 */
-	inline idx::contenthelpers::OptionalValue<ValueType> upsert(ValueType newValue);
+	inline bool insertWithInsertStack(std::array<HOTSingleThreadedInsertStackEntry, 64> &insertStack, unsigned int leafDepth,
+									  KeyType const &existingKey, uint existingKeyLength, uint8_t const *newKeyBytes, ValueType const &newValue, uint newkeyLength);
 
 	/**
 	 * @return an iterator to the first value according to the key order.
@@ -134,7 +111,7 @@ template<typename ValueType, template <typename> typename KeyExtractor> struct H
 	 * @return either an iterator pointing to the matching entry or the end iterator
 	 */
 	inline const_iterator find(KeyType const & searchKey) const;
-private:
+protected:
 	inline const_iterator findForNonEmptyTrie(KeyType const & searchKey) const;
 
 public:
@@ -192,7 +169,7 @@ public:
 	 * @return the collected statistical values
 	 */
 	std::pair<size_t, std::map<std::string, double>> getStatistics() const;
-private:
+protected:
 	inline void collectStatsForSubtree(HOTSingleThreadedChildPointer const & subTreeRoot, std::map<std::string, double> & stats) const;
 
 	/**
@@ -230,6 +207,64 @@ public:
 	 * @return the overall tree height
 	 */
 	size_t getHeight() const;
+};
+
+template<typename ValueType, template <typename> typename KeyExtractor> struct HOTSingleThreaded : public HOTSingleThreadedBase <ValueType, KeyExtractor> {
+	using KeyType = decltype(HOTSingleThreadedBase<ValueType, KeyExtractor>::extractKey(std::declval<ValueType>()));
+
+	using const_iterator = HOTSingleThreadedIterator<ValueType>;
+	/**
+	 * Inserts the given value into the index. The value is inserted according to its keys value.
+	 * In case the index already contains a value for the corresponding key, the value is not inserted.
+	 *
+	 * @param value the value to insert.
+	 * @return true if the value can be inserted, false if the index already contains a value for the corresponding key
+	 */
+	inline bool insert(ValueType const & value);
+
+	/**
+	 * Executes an upsert for the given value.
+	 * If the index does not contain a value for the value's key, the upsert operation executes an insert.
+	 * It the index already contains a value for the value's key, this previously contained value is replaced and returned
+	 *
+	 * @param newValue the value to upsert.
+	 * @return the value of a previously contained value for the same key or an invalid result otherwise
+	 */
+	inline idx::contenthelpers::OptionalValue<ValueType> upsert(ValueType newValue);
+
+	/**
+	 * For a given key it looks up the stored value
+	 *
+	 * @param key the key to lookup
+	 * @return the looked up value. The result is valid, if a matching record was found.
+	 */
+	inline __attribute__((always_inline)) idx::contenthelpers::OptionalValue<ValueType> lookup(KeyType const &key);
+
+	inline bool remove(KeyType const & key);
+};
+
+template<template <typename> typename KeyExtractor> struct HOTSingleThreaded <const std::string*, KeyExtractor> : public HOTSingleThreadedBase <const std::string*, KeyExtractor> {
+	using KeyType = decltype(HOTSingleThreadedBase<const std::string*, KeyExtractor>::extractKey(std::declval<const std::string*>()));
+
+	using const_iterator = HOTSingleThreadedIterator<const std::string*>;
+	/**
+	 * Inserts the given value into the index. The value is inserted according to its keys value.
+	 * In case the index already contains a value for the corresponding key, the value is not inserted.
+	 *
+	 * @param value the value to insert.
+	 * @return true if the value can be inserted, false if the index already contains a value for the corresponding key
+	 */
+	inline bool insert(const std::string* const & value);
+
+	/**
+	 * For a given key it looks up the stored value
+	 *
+	 * @param key the key to lookup
+	 * @return the looked up value. The result is valid, if a matching record was found.
+	 */
+	inline __attribute__((always_inline)) idx::contenthelpers::OptionalValue<const std::string*> lookup(KeyType const &key, uint keyLength);
+
+	inline bool remove(KeyType const & key, uint keyLength);
 };
 
 inline void insertNewValueIntoNode(

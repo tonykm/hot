@@ -118,6 +118,8 @@ protected:
 public:
 	inline uint32_t extractMask(uint8_t const *keyBytes) const;
 
+	inline uint32_t extractMask(uint8_t const *keyBytes, uint keyLength) const;
+
 	/**
 	 * Given a key information it generates a prefix up to the position represented by the key information and generates a mask corresponding to the bits defined in this extraction mask
 	 *
@@ -194,6 +196,8 @@ protected:
 	inline void initializeDataAndPositionsWithZero();
 
 	inline ExtractionDataArray mapInput(uint8_t const __restrict__ *keyBytes) const;
+
+	inline ExtractionDataArray mapInput(uint8_t const __restrict__ *keyBytes, uint keyLength) const;
 
 	inline uint32_t extractMaskForMappedInput(ExtractionDataArray const &mappedInputData) const;
 

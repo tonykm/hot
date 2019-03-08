@@ -205,6 +205,8 @@ public:
 	 */
 	inline HOTSingleThreadedChildPointer const * search(uint8_t const * keyBytes) const;
 
+	inline HOTSingleThreadedChildPointer const * search(uint8_t const * keyBytes, uint keyLength) const;
+
 	/**
 	 * searches the node and returns a potential result candidate by:
 	 * 	1. extracting the discriminative bits of the search key bytes thereby creating a dense partial key
@@ -220,6 +222,8 @@ public:
 	 * @return the result candidate
 	 */
 	inline HOTSingleThreadedChildPointer* searchForInsert(hot::commons::SearchResultForInsert & searchResultOut, uint8_t const * keyBytes) const;
+
+	inline HOTSingleThreadedChildPointer* searchForInsert(hot::commons::SearchResultForInsert & searchResultOut, uint8_t const * keyBytes, uint keyLength) const;
 
 	/**
 	 * Determines the information required to insert a new entry in the node.

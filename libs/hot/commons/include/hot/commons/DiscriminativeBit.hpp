@@ -66,6 +66,28 @@ template<typename Operation> inline bool executeForDiffingKeys(uint8_t const* ex
 	return false;
 };
 
+template<typename Operation> inline bool executeForDiffingKeys(uint8_t const* existingKey, uint8_t const* newKey, uint existingKeyLength, uint newKeyLength, Operation const & operation) {
+	for(size_t index = 0; index < std::max(existingKeyLength, newKeyLength); ++index) {
+		uint8_t newByte;
+		if (index < newKeyLength) {
+			newByte = newKey[index];
+		} else {
+			newByte = 0;
+		}
+		uint8_t existingByte;
+		if (index < existingKeyLength) {
+			existingByte = existingKey[index];
+		} else {
+			existingByte = 0;
+		}
+		if(existingByte != newByte) {
+			operation(DiscriminativeBit {static_cast<uint16_t>(index), existingByte, newByte });
+			return true;
+		}
+	}
+	return false;
+};
+
 inline idx::contenthelpers::OptionalValue<DiscriminativeBit> getMismatchingBit(uint8_t const* existingKey, uint8_t const* newKey, uint16_t keyLengthInBytes) {
 	for(size_t index = 0; index < keyLengthInBytes; ++index) {
 		uint8_t newByte = newKey[index];

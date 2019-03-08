@@ -41,10 +41,10 @@ public:
 	}
 };
 
-template<typename ValueType, template <typename> typename KeyExtractor> class HOTSingleThreaded; //Forward Declaration of SIMDCobTrie for usage as friend class
+template<typename ValueType, template <typename> typename KeyExtractor> class HOTSingleThreadedBase; //Forward Declaration of SIMDCobTrie for usage as friend class
 
 template<typename ValueType> class HOTSingleThreadedIterator {
-	template<typename ValueType2, template <typename> typename KeyExtractor> friend class hot::singlethreaded::HOTSingleThreaded;
+	template<typename ValueType2, template <typename> typename KeyExtractor> friend class hot::singlethreaded::HOTSingleThreadedBase;
 
 	static HOTSingleThreadedChildPointer END_TOKEN;
 

@@ -230,6 +230,10 @@ template<unsigned int numberExtractionMasks> inline __attribute__((always_inline
 	return extractMaskForMappedInput(mapInput(keyBytes));
 }
 
+template<unsigned int numberExtractionMasks> inline __attribute__((always_inline)) uint32_t MultiMaskPartialKeyMapping<numberExtractionMasks>::extractMask(uint8_t const * keyBytes, uint keyLength) const {
+	return extractMaskForMappedInput(mapInput(keyBytes, keyLength));
+}
+
 /**
  * Extracts a bit masks corresponding to 111111111|00000000 with the first zero bit marking the misssmatching bit index.
  */
@@ -447,6 +451,21 @@ template<unsigned int numberExtractionMasks> inline typename MultiMaskPartialKey
 	uint8_t const * __restrict__ highPositions = reinterpret_cast<uint8_t const* >(mExtractionExtendedPositions.data());
 	for(int i=0; i < mNumberExtractionBytes; ++i) {
 		mappedInputBytes[i] = keyBytes[highPositions[i] * 256 + lowPositions[i]];
+	}
+	return std::move(mappedInput);
+};
+
+template<unsigned int numberExtractionMasks> inline typename MultiMaskPartialKeyMapping<numberExtractionMasks>::ExtractionDataArray MultiMaskPartialKeyMapping<numberExtractionMasks>::mapInput(uint8_t const __restrict__ * keyBytes, uint keyLength) const {
+	ExtractionDataArray mappedInput = zeroInitializedArray();
+	uint8_t* __restrict__ mappedInputBytes = reinterpret_cast<uint8_t*>(mappedInput.data());
+	uint8_t const * __restrict__ lowPositions = reinterpret_cast<uint8_t const* >(mExtractionPositions.data());
+	uint8_t const * __restrict__ highPositions = reinterpret_cast<uint8_t const* >(mExtractionExtendedPositions.data());
+	for(int i=0; i < mNumberExtractionBytes; ++i) {
+		if (highPositions[i] * 256 + lowPositions[i] < keyLength) {
+			mappedInputBytes[i] = keyBytes[highPositions[i] * 256 + lowPositions[i]];
+		} else {
+			mappedInputBytes[i] = 0;
+		}
 	}
 	return std::move(mappedInput);
 };

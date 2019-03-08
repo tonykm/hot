@@ -171,6 +171,8 @@ public:
 
 	inline uint32_t extractMask(uint8_t const *keyBytes) const;
 
+	inline uint32_t extractMask(uint8_t const *keyBytes, uint keyLength) const;
+
 	/**
 	 *
 	 * @return a key which has only those discriminative bits set which are represented by this partial key mapping

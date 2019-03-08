@@ -172,6 +172,20 @@ inline __attribute__((always_inline)) uint32_t SingleMaskPartialKeyMapping::extr
 	return  extractMaskFromSuccessiveBytes(*reinterpret_cast<uint64_t const*>(keyBytes + mOffsetInBytes));
 }
 
+inline __attribute__((always_inline)) uint32_t SingleMaskPartialKeyMapping::extractMask(uint8_t const * keyBytes, uint keyLength) const {
+	if (mOffsetInBytes + 8 < keyLength) {
+		return  extractMaskFromSuccessiveBytes(*reinterpret_cast<uint64_t const*>(keyBytes + mOffsetInBytes));
+	} else if (mOffsetInBytes >= keyLength) {
+		return 0;
+	}
+	else {
+		uint64_t intermediateKey; // 8 bytes 
+		std::memset(&intermediateKey, 0, 8);
+		std::memcpy(&intermediateKey, keyBytes + mOffsetInBytes, keyLength - mOffsetInBytes);
+		return  extractMaskFromSuccessiveBytes(*reinterpret_cast<uint64_t const*>(intermediateKey));
+	}
+}
+
 inline std::array<uint8_t, 256> SingleMaskPartialKeyMapping::createIntermediateKeyWithOnlySignificantBitsSet() const {
 	std::array<uint8_t, 256> intermediateKey;
 	std::memset(intermediateKey.data(), 0, 256);
