@@ -64,7 +64,7 @@ template<typename ValueType, template <typename> typename KeyExtractor> inline i
 	uint8_t const* byteKey = idx::contenthelpers::interpretAsByteArray(fixedSizeKey);
 
 	HOTRowexChildPointer current =  mRoot;
-	while(!current.isLeaf()) {
+	while(!current.isLeaf() & (current.getNode() != nullptr)) {
 		current = *(current.search(byteKey));
 	}
 	ValueType const & value = idx::contenthelpers::tidToValue<ValueType>(current.getTid());
